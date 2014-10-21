@@ -7,7 +7,9 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Vector;
+
 import Business.Issue;
 import oracle.jdbc.OracleTypes;
 import Presentation.IRepositoryProvider;
@@ -24,6 +26,8 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
     private final String database = "oracle12.it.usyd.edu.au:1521:COMP5138";
     // instance variable for the database connection   
     private Connection conn = null; 
+	private ArrayList<String> names = new ArrayList<String>();
+	private ArrayList<String> titleOrDescription = new ArrayList<String>();
 
     public OracleRepositoryProvider(){
         try 
@@ -292,6 +296,51 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		//A blank search 
 		if(searchString.isEmpty()){
 			newIssue = this.queryExtend(userId, "{call getAllUserIssues(?,?)}", 0);
+		}else{
+			
+			identify(searchString);
+			
+			if(openConnection()){
+				  try
+			       {
+			          /* prepare a dynamic query statement */
+
+					  
+			          PreparedStatement stmt = conn.prepareStatement(
+			                                    "SELECT * FROM A3_ISSUE WHERE TITLE=? OR DESCRIPTION=?");
+			          stmt.setString(1, titleOrDescription.get(0));
+			          stmt.setString(2, titleOrDescription.get(0));
+
+			          /* execute the query and loop through the resultset */
+			          ResultSet rset = stmt.executeQuery(); 
+			          int nr = 0;
+			          while ( rset.next() )
+			          {
+			             nr++;
+			             Issue tempIssue = new Issue();
+			             tempIssue.setDescription(rset.getString("DESCRIPTION"));
+			             tempIssue.setCreator(rset.getInt("CREATOR"));
+			             tempIssue.setId(rset.getInt("ID"));
+			             tempIssue.setResolver(rset.getInt("RESOLVER"));
+			             tempIssue.setTitle(rset.getString("TITLE"));
+			             tempIssue.setVerifier(rset.getInt("VERIFIER"));
+			             newIssue.add(tempIssue);
+			          }
+			              
+			          if ( nr == 0 )
+			             System.out.println("No entries found.");
+			                 
+			          /* clean up! (NOTE this really belongs in a finally{} block) */
+			          stmt.close();
+			       }
+			       catch (SQLException sqle) 
+			       {  
+			           /* error handling */
+			           System.out.println("SQLException : " + sqle);
+			       }
+				  closeConnection();
+				}
+			
 		}
 		return newIssue;
 	}
@@ -312,5 +361,48 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		issues.add(getDummyIssue());
 		return issues;
 	}
-	
+	public void identify(String searchStr){
+		ArrayList<String> list = new ArrayList<String>();
+
+		boolean hasAt = false;
+		if(searchStr.contains("@")) hasAt = true;
+		
+		String[] str = searchStr.split("@");
+		for(String s : str){
+			if(!s.isEmpty()){
+				list.add(s);
+			}
+		}
+		int index = 0;
+		if(hasAt){
+			for(String s:list){
+				String[] temp = s.split("\\|");
+				if(index == 0){				
+					for(String s1:temp){
+						names.add(s1);
+					}
+				}else if(index == 1){
+					for(String s1:temp){
+						titleOrDescription.add(s1);
+					}
+				}
+				index++;
+			}
+		}else{
+			for(String s:list){
+				String[] temp = s.split("\\|");
+				for(String s1:temp){
+					titleOrDescription.add(s1);
+				}
+			}
+		}
+		for(String s:names){
+			System.out.print("Name: ");
+			System.out.println(s);
+		}
+		for(String s:titleOrDescription){
+			System.out.print("TitleOrDescription: ");
+			System.out.println(s);
+		}
+	}
 }
