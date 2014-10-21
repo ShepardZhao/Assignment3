@@ -20,7 +20,7 @@ import Presentation.IRepositoryProvider;
 public class OracleRepositoryProvider implements IRepositoryProvider {
 	   // connection parameters - ENTER YOUR LOGIN AND PASSWORD HERE
     private final String userid   = "xzha4611";
-    private final String passwd   = "Jaeexe01";
+    private final String passwd   = "xzha4611";
     private final String database = "oracle12.it.usyd.edu.au:1521:COMP5138";
     // instance variable for the database connection   
     private Connection conn = null; 
