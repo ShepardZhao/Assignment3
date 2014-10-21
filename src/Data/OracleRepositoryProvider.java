@@ -293,11 +293,6 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		if(searchString.isEmpty()){
 			newIssue = this.queryExtend(userId, "{call getAllUserIssues(?,?)}", 0);
 		}
-		
-		
-		
-		
-	
 		return newIssue;
 	}
 	
@@ -317,4 +312,5 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		issues.add(getDummyIssue());
 		return issues;
 	}
+	
 }
