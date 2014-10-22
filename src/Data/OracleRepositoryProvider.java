@@ -17,7 +17,6 @@ import Presentation.IRepositoryProvider;
 /**
  * Encapsulates create/read/update/delete operations to Oracle database
  * @author matthewsladescu
- *
  */
 public class OracleRepositoryProvider implements IRepositoryProvider {
 	   // connection parameters - ENTER YOUR LOGIN AND PASSWORD HERE
@@ -310,18 +309,18 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 						  if(titleOrDescription.size()==0){
 							  type=1;
 							  statement = "SELECT * FROM A3_USER u JOIN A3_ISSUE i ON"+
-									  " (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER)"+
+										 " (u.ID=? AND (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER))"+
 									  "WHERE FIRSTNAME=? OR LASTNAME=?";
 						  }
 						  else if(titleOrDescription.size()==1){
 							  type=2;
 							  statement = "SELECT * FROM A3_USER u JOIN A3_ISSUE i ON"+
-									  " (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER)"+
+										 " (u.ID=? AND (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER))"+
 									  "WHERE (FIRSTNAME=? OR LASTNAME=?) AND (TITLE like ? OR DESCRIPTION like ?)";
 						  }else{
 							  type=3;
 							  statement = "SELECT * FROM A3_USER u JOIN A3_ISSUE i ON"+
-									  " (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER)"+
+										 " (u.ID=? AND (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER))"+
 									  "WHERE (FIRSTNAME=? OR LASTNAME=?) AND ((TITLE like ? OR DESCRIPTION like ?)"+
 									  "OR (TITLE like ? OR DESCRIPTION like ?))";
 						  }			  
@@ -329,12 +328,12 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 						  if(titleOrDescription.size()==1){
 							  type=4;
 							  statement = "SELECT * FROM A3_USER u JOIN A3_ISSUE i ON"+
-									 " (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER)"+
-									 "WHERE TITLE like ? OR DESCRIPTION like ?";
+										 " (u.ID=? AND (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER))"+
+									 "WHERE TITLE like ? OR DESCRIPTION like ? ";
 						  }else if(titleOrDescription.size()>1){
 							  type=5;
 							  statement = "SELECT * FROM A3_USER u JOIN A3_ISSUE i ON"+
-										 " (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER)"+
+										 " (u.ID=? AND (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER))"+
 										 "WHERE (TITLE like ? OR DESCRIPTION like ?) OR (TITLE like ? OR DESCRIPTION like ?)";
 						  }
 						  
@@ -342,26 +341,31 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 					  
 			          PreparedStatement stmt = conn.prepareStatement(statement);
 			          if(type==1){
-			        	  stmt.setString(1, names.get(0));
-				          stmt.setString(2, names.get(0));
+				          stmt.setInt(1,userId);
+			        	  stmt.setString(2, names.get(0));
+				          stmt.setString(3, names.get(0));
 			          }
 			          if(type==2 || type==3){
-				          stmt.setString(1, names.get(0));
+				          stmt.setInt(1,userId);
 				          stmt.setString(2, names.get(0));
-				          stmt.setString(3, "%"+titleOrDescription.get(0)+"%");
-				          stmt.setString(4, "%"+titleOrDescription.get(0)+"%");	
+				          stmt.setString(3, names.get(0));
+				          stmt.setString(4, "%"+titleOrDescription.get(0)+"%");
+				          stmt.setString(5, "%"+titleOrDescription.get(0)+"%");	
 				          if(type==3){
-				        	  stmt.setString(5, "%"+titleOrDescription.get(1)+"%");
-					          stmt.setString(6, "%"+titleOrDescription.get(1)+"%");	
+				        	  stmt.setString(6, "%"+titleOrDescription.get(1)+"%");
+					          stmt.setString(7, "%"+titleOrDescription.get(1)+"%");	
 				          }
+
 			          }
 			          if(type==4 || type==5){
-				          stmt.setString(1, "%"+titleOrDescription.get(0)+"%");
+				          stmt.setInt(1,userId);
 				          stmt.setString(2, "%"+titleOrDescription.get(0)+"%");
+				          stmt.setString(3, "%"+titleOrDescription.get(0)+"%");
 				          if(type==5){
-					          stmt.setString(3, "%"+titleOrDescription.get(1)+"%");
 					          stmt.setString(4, "%"+titleOrDescription.get(1)+"%");
+					          stmt.setString(5, "%"+titleOrDescription.get(1)+"%");
 				          }
+
 			          }
 
 			          /* execute the query and loop through the resultset */
