@@ -27,7 +27,9 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
     private Connection conn = null; 
 	private ArrayList<String> names = new ArrayList<String>();
 	private ArrayList<String> titleOrDescription = new ArrayList<String>();
-
+	private String searchName="";
+	private String searchTitle1="";
+	private String searchTitle2="";
     public OracleRepositoryProvider(){
         try 
         {   
@@ -40,11 +42,6 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
             System.out.println(no_class_ex);
         }
     }
-    
-   
-    
-    
-    
     
     /**
      * Establishes a connection to the Oracle database.
@@ -121,27 +118,27 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
     	if(this.openConnection()){
 			  try
 		       {
+				  conn.setAutoCommit(false);
 		          /* prepare a dynamic query statement */
 		          PreparedStatement stmt = conn.prepareStatement(statement);
 		          stmt.setString(1, issue.getTitle());
 		          stmt.setString(2, issue.getDescription());
 		          stmt.setInt(3, issue.getCreator());
 		          stmt.setInt(4, issue.getResolver());
-		          stmt.setInt(5, issue.getVerifier());
+		          stmt.setInt(5, issue.getVerifier());          
 		          //only do when type is equal 1
 		          if(type==1){
-		          stmt.setInt(6, issue.getId());
+		        	//  stmt.setInt(6, issue.getId());
+		        	  stmt.setInt(6, issue.getId());
+//		        	  stmt.setInt(7, issue.getResolver());
+//		        	  stmt.setInt(8, issue.getVerifier());	
+//		        	  stmt.setInt(9, issue.getId());
 		          }
 		          /* execute update or insert statement */
-		          int effect = stmt.executeUpdate(); 
-		                
-		          if(effect==0){
-		        	System.out.println(message+" failure!");  
-		          }
-		          else if (effect==1){
-			        System.out.println(message+" success!");  
-
-		          }
+		          stmt.executeUpdate(); 
+		          
+		          System.out.println("Insert/Update success!");
+		          
 		          /* clean up! (NOTE this really belongs in a finally{} block) */
 		          stmt.close();
 		       }
@@ -153,11 +150,15 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		       catch (SQLException sqle) 
 		       {  
 		           /* error handling */
-		        	System.out.println(message+" failure!");  
-
-		           System.out.println("SQLException : " + sqle);
+		    	   try{
+		    		   System.out.println("SQLException:"+sqle);
+			    	   System.out.println(message+" failure! ROLLBACK!!!!");  
+			           System.out.println("Transaction is being rolled back");
+			           conn.rollback();
+		    	   }catch(SQLException excep){
+		    		   System.out.println("SQLException:"+excep);
+		    	   }
 		       }
-			   
 			  this.closeConnection();
 			}
     }
@@ -176,7 +177,16 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 	@Override
 	public void updateIssue(Issue issue) {
 		
+//		String updateStatement = "UPDATE A3_ISSUE i"+
+//				" SET i.TITLE=?, i.DESCRIPTION=?,i.CREATOR=?,i.RESOLVER=?,i.VERIFIER=?"+
+//				" WHERE EXISTS ("+
+//				" SELECT *"+
+//				" FROM A3_USER u"+
+//				" WHERE (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER) AND (u.ID=? OR u.ID=? OR u.ID=?)"+
+//				" AND (i.ID=?))";
+		
 		String updateStatement = "UPDATE A3_ISSUE SET TITLE=?, DESCRIPTION=?,CREATOR=?,RESOLVER=?,VERIFIER=? WHERE ID=?";
+		
 		this.InsertAndUpdate(1, "update", updateStatement, issue);
 	
 	}
@@ -194,17 +204,33 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		if(openConnection()){
 			  try
 		       {
-		          //prepare a dynamic query statement
-				  callableStatement = conn.prepareCall(storeProdureStatement);
-		                                   
-				  callableStatement.setInt(1, userId);
-				  callableStatement.registerOutParameter(2, OracleTypes.CURSOR);
+				  if(condition == 0){
+			          //prepare a dynamic query statement
+					  callableStatement = conn.prepareCall(storeProdureStatement);
+			                                   
+					  callableStatement.setInt(1, userId);
+					  callableStatement.registerOutParameter(2, OracleTypes.CURSOR);
+					  //execute getAllUserIssues store procedure
+					  callableStatement.executeUpdate();
+					
+					  //casting and get result set	
+					  rs = (ResultSet) callableStatement.getObject(2);
+				  }
+				  else{
+					  callableStatement = conn.prepareCall(storeProdureStatement);
+					  callableStatement.setInt(1, condition);
+					  callableStatement.setString(2, searchName);
+					  callableStatement.setString(3, "%"+searchTitle1+"%");
+					  callableStatement.setString(4, "%"+searchTitle2+"%");
+					  callableStatement.setInt(5, userId);
+					  callableStatement.registerOutParameter(6, OracleTypes.CURSOR);
+					  //execute search store procedure
+					  callableStatement.executeUpdate();
+					
+					  //casting and get result set	
+					  rs = (ResultSet) callableStatement.getObject(6);
+				  }
 
-				  //execute getAllUserIssues store procedure
-				  callableStatement.executeUpdate();
-				
-				  //casting and get result set	
-				  rs = (ResultSet) callableStatement.getObject(2);
 						
 		          int nr = 0;
 		          while ( rs.next() )
@@ -214,12 +240,9 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		             tempIssue.setTitle(rs.getString("TITLE"));
 		             tempIssue.setDescription(rs.getString("DESCRIPTION"));
 		             tempIssue.setCreator(rs.getInt("CREATOR"));
-		             if(!rs.wasNull()){
-		            	 tempIssue.setId(rs.getInt("ID"));
-			             tempIssue.setResolver(rs.getInt("RESOLVER"));
-			             tempIssue.setVerifier(rs.getInt("VERIFIER"));
-		             }
-		          
+		             tempIssue.setId(rs.getInt("ID"));
+			         tempIssue.setResolver(rs.getInt("RESOLVER"));
+			         tempIssue.setVerifier(rs.getInt("VERIFIER"));		             		          
 		             issueVec.add(tempIssue);
 		          }
 		              
@@ -267,8 +290,8 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 	 */
 	@Override
 	public void addIssue(Issue issue) {
-		String insertStatement = "INSERT into A3_ISSUE(TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER)"+
-	        		  "values (?,?,?,?,?)";
+		String insertStatement = "INSERT into A3_ISSUE i (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER)"+
+	        		" values (?,?,?,?,?)";
 		this.InsertAndUpdate(0, "insert", insertStatement, issue);	
 	}
 	
@@ -291,133 +314,43 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 	public Vector<Issue> findIssueBasedOnExpressionSearchedOnTitleAndDescription(
 			String searchString, int userId) {
 		Vector<Issue> newIssue = new Vector<Issue>();
-		System.out.println(searchString);
 		//A blank search 
 		if(searchString.isEmpty()){
 			newIssue = this.queryExtend(userId, "{call getAllUserIssues(?,?)}", 0);
-		}else{
-			
+		}else{	
 			identify(searchString);
-			
-			if(openConnection()){
-				  try
-			       {
+			if(titleOrDescription.size()>0)
+				searchTitle1=titleOrDescription.get(0);
+			if(titleOrDescription.size()>1)
+				searchTitle2=titleOrDescription.get(1);
 			          /* prepare a dynamic query statement */
-					  String statement = "";
-					  int type = 0;
-					  if(names.size() > 0){
-						  if(titleOrDescription.size()==0){
-							  type=1;
-							  statement = "SELECT * FROM A3_USER u JOIN A3_ISSUE i ON"+
-										 " (u.ID=? AND (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER))"+
-									  "WHERE FIRSTNAME=? OR LASTNAME=?";
-						  }
-						  else if(titleOrDescription.size()==1){
-							  type=2;
-							  statement = "SELECT * FROM A3_USER u JOIN A3_ISSUE i ON"+
-										 " (u.ID=? AND (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER))"+
-									  "WHERE (FIRSTNAME=? OR LASTNAME=?) AND (TITLE like ? OR DESCRIPTION like ?)";
-						  }else{
-							  type=3;
-							  statement = "SELECT * FROM A3_USER u JOIN A3_ISSUE i ON"+
-										 " (u.ID=? AND (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER))"+
-									  "WHERE (FIRSTNAME=? OR LASTNAME=?) AND ((TITLE like ? OR DESCRIPTION like ?)"+
-									  "OR (TITLE like ? OR DESCRIPTION like ?))";
-						  }			  
-					  }else{
-						  if(titleOrDescription.size()==1){
-							  type=4;
-							  statement = "SELECT * FROM A3_USER u JOIN A3_ISSUE i ON"+
-										 " (u.ID=? AND (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER))"+
-									 "WHERE TITLE like ? OR DESCRIPTION like ? ";
-						  }else if(titleOrDescription.size()>1){
-							  type=5;
-							  statement = "SELECT * FROM A3_USER u JOIN A3_ISSUE i ON"+
-										 " (u.ID=? AND (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER))"+
-										 "WHERE (TITLE like ? OR DESCRIPTION like ?) OR (TITLE like ? OR DESCRIPTION like ?)";
-						  }
-						  
-					  }
-					  
-			          PreparedStatement stmt = conn.prepareStatement(statement);
-			          if(type==1){
-				          stmt.setInt(1,userId);
-			        	  stmt.setString(2, names.get(0));
-				          stmt.setString(3, names.get(0));
-			          }
-			          if(type==2 || type==3){
-				          stmt.setInt(1,userId);
-				          stmt.setString(2, names.get(0));
-				          stmt.setString(3, names.get(0));
-				          stmt.setString(4, "%"+titleOrDescription.get(0)+"%");
-				          stmt.setString(5, "%"+titleOrDescription.get(0)+"%");	
-				          if(type==3){
-				        	  stmt.setString(6, "%"+titleOrDescription.get(1)+"%");
-					          stmt.setString(7, "%"+titleOrDescription.get(1)+"%");	
-				          }
-
-			          }
-			          if(type==4 || type==5){
-				          stmt.setInt(1,userId);
-				          stmt.setString(2, "%"+titleOrDescription.get(0)+"%");
-				          stmt.setString(3, "%"+titleOrDescription.get(0)+"%");
-				          if(type==5){
-					          stmt.setString(4, "%"+titleOrDescription.get(1)+"%");
-					          stmt.setString(5, "%"+titleOrDescription.get(1)+"%");
-				          }
-
-			          }
-
-			          /* execute the query and loop through the resultset */
-			          ResultSet rset = stmt.executeQuery(); 
-			          int nr = 0;
-			          while ( rset.next() )
-			          {
-			             nr++;
-			             Issue tempIssue = new Issue();
-			             tempIssue.setDescription(rset.getString("DESCRIPTION"));
-			             tempIssue.setCreator(rset.getInt("CREATOR"));
-			             tempIssue.setId(rset.getInt("ID"));
-			             tempIssue.setResolver(rset.getInt("RESOLVER"));
-			             tempIssue.setTitle(rset.getString("TITLE"));
-			             tempIssue.setVerifier(rset.getInt("VERIFIER"));
-			             newIssue.add(tempIssue);
-			          }
-			              
-			          if ( nr == 0 )
-			             System.out.println("No entries found.");
-			                 
-			          /* clean up! (NOTE this really belongs in a finally{} block) */
-			          stmt.close();
-			       }
-			       catch (SQLException sqle) 
-			       {  
-			           /* error handling */
-			           System.out.println("SQLException : " + sqle);
-			       }
-				  closeConnection();
+			if(names.size() > 0){
+				searchName=names.get(0);
+				if(titleOrDescription.size()==0){
+					newIssue = this.queryExtend(userId, "{call SEARCHTYPE1(?,?,?,?,?,?)}", 1);
 				}
+				else if(titleOrDescription.size()==1){
+					newIssue = this.queryExtend(userId, "{call SEARCHTYPE1(?,?,?,?,?,?)}", 2);
+				}else{
+					newIssue = this.queryExtend(userId, "{call SEARCHTYPE1(?,?,?,?,?,?)}", 3);
+				}			  
+			}else{
+				if(titleOrDescription.size()==1){
+					newIssue = this.queryExtend(userId, "{call SEARCHTYPE1(?,?,?,?,?,?)}", 4);
+					
+					
+				}else if(titleOrDescription.size()>1){
+					newIssue = this.queryExtend(userId, "{call SEARCHTYPE1(?,?,?,?,?,?)}", 5);
+				}
+			}		  
 			
-		}
+		}			
+		
 		return newIssue;
 	}
 	
-	public Issue getDummyIssue()
-	{
-		Issue dummyIssue = new Issue();
-		dummyIssue.setId(1);
-		dummyIssue.setCreator(1);
-		dummyIssue.setTitle("PlaceHolder issue");
-		dummyIssue.setDescription("PlaceHolder Issue Description");
-		return dummyIssue;
-	}
-	
-	public Vector<Issue> getDummyIssues()
-	{
-		Vector<Issue> issues = new Vector<Issue>();
-		issues.add(getDummyIssue());
-		return issues;
-	}
+
+
 	public void identify(String searchStr){
 		ArrayList<String> list = new ArrayList<String>();
 
