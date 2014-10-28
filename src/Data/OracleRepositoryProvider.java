@@ -59,7 +59,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 //				" WHERE (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER) AND (u.ID=? OR u.ID=? OR u.ID=?)"+
 //				" AND (i.ID=?))";
 		
-		String updateStatement = "UPDATE A3_ISSUE SET TITLE=?, DESCRIPTION=?,CREATOR=?,RESOLVER=?,VERIFIER=? WHERE ID=?";
+		String updateStatement = "UPDATE A3_ISSUE SET TITLE=?, DESCRIPTION=?,CREATOR=?,RESOLVER=?,VERIFIER=? WHERE ID=? AND UserVersionID=?";
 		
 		this.InsertAndUpdate(1, "update", updateStatement, issue);
 	
@@ -137,6 +137,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 			
 		}			
 		
+		
 		return newIssue;
 	}
 	
@@ -145,6 +146,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
      * This function will include the insert or update statement
      */
     private void InsertAndUpdate(int type, String message, String statement, Issue issue){
+    	
     	//if type equals 0; then insert, else equals 1; then update
     	if(this.openConnection()){
 			  try
@@ -162,6 +164,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		          if(type==1){
 		        	//  stmt.setInt(6, issue.getId());
 		        	  stmt.setInt(6, issue.getId());
+		        	  stmt.setInt(7, issue.getVersionID());
 //		        	  stmt.setInt(7, issue.getResolver());
 //		        	  stmt.setInt(8, issue.getVerifier());	
 //		        	  stmt.setInt(9, issue.getId());
@@ -242,10 +245,12 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		          {
 		             nr++;
 		             Issue tempIssue = new Issue();
+		         
 		             tempIssue.setTitle(rs.getString("TITLE"));
 		             tempIssue.setDescription(rs.getString("DESCRIPTION"));
 		             tempIssue.setCreator(rs.getInt("CREATOR"));
 		             tempIssue.setId(rs.getInt("ID"));
+		             tempIssue.setVersionID(rs.getInt("USERVERSIONID"));
 			         tempIssue.setResolver(rs.getInt("RESOLVER"));
 			         tempIssue.setVerifier(rs.getInt("VERIFIER"));		             		          
 		             issueVec.add(tempIssue);
@@ -265,6 +270,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 			  System.out.println("Searching Done!");
 			  closeConnection();
 			}	
+		
 		return issueVec;	
 	}
 	

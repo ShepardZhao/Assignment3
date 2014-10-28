@@ -1,15 +1,25 @@
 package Business;
 
 public class Issue {
-
 	private String description;
 	private String title;
 	private Integer creator;
 	private Integer resolver;
 	private Integer verifier;
+	private Integer versionID;
 	private int id;
 	
 
+	
+	public Integer getVersionID(){
+		return versionID;
+	}
+	
+	public void setVersionID(Integer versionID){
+		
+		this.versionID = versionID;
+	}
+	
 	public String getDescription() {
 		return description;
 	}

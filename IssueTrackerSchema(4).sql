@@ -1,6 +1,5 @@
 DROP TABLE A3_ISSUE;
 DROP TABLE A3_USER;
-DROP SEQUENCE UserVersionID_seq;
 DROP PROCEDURE getAllUserIssues;
 DROP PROCEDURE SEARCHTYPE1;
 DROP TRIGGER A3_ISSUE_Trigger_initial;
@@ -19,7 +18,7 @@ CREATE TABLE A3_ISSUE
 DESCRIPTION VARCHAR2(1000), 
 PROJECTID NUMBER, 
 TITLE VARCHAR2(100),  
-UserVersionID int NOT NULL, -- this column for optimistic offline lock --
+USERVERSINID int NOT NULL, -- this column for optimistic offline lock --
 CREATOR NUMBER not null REFERENCES A3_USER, 
 RESOLVER NUMBER REFERENCES A3_USER, 
 VERIFIER NUMBER REFERENCES A3_USER);
@@ -30,14 +29,13 @@ Insert into A3_USER (FIRSTNAME,LASTNAME) values ('Jess','Smith');
 commit;
 
 
-CREATE SEQUENCE UserVersionID_seq MINVALUE 100 MAXVALUE 200 START WITH 101 INCREMENT BY 1  NOCACHE;
 
 
 -- create inital trigger to generate the version id --
 create or replace trigger A3_ISSUE_Trigger_initial before insert on A3_ISSUE for each row 
 begin
  --set the initial transaction control number --
-	:new.UserVersionID := dbms_utility.get_time+UserVersionID_seq.NEXTVAL;
+	:new.USERVERSINID := dbms_utility.get_time+1;
 
 end;
 /
@@ -51,14 +49,13 @@ commit;
 -- create the upadte version id in the trigger --
 create or replace trigger A3_ISSUE_Trigger_update before update on A3_ISSUE for each row
 begin
- -- update the transaction control number --	
-	if( :new.UserVersionID != :old.UserVersionID+1 )  
+
+	if( :new.USERVERSINID != :old.USERVERSINID )  
 	then
 	raise_application_error( -20000, 'Update Failure, another user is in progress'); 
 	end if;
-	
  -- update the transcation controller number --
- 	:new.UserVersionID := dbms_utility.get_time;
+ 	:new.USERVERSINID := dbms_utility.get_time;
 end; 	
 /
 commit;
@@ -83,14 +80,6 @@ Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER) values
 Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER) values 
 ('Incorrect’ BODMAS order','Addition occurring before multiplication',2,2,2);
 commit;
-
-
-
-
-
-
-
-
 
 
 
