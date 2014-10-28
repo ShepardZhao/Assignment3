@@ -59,7 +59,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 //				" WHERE (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER) AND (u.ID=? OR u.ID=? OR u.ID=?)"+
 //				" AND (i.ID=?))";
 		
-		String updateStatement = "UPDATE A3_ISSUE SET TITLE=?, DESCRIPTION=?,CREATOR=?,RESOLVER=?,VERIFIER=? WHERE ID=? AND UserVersionID=?";
+		String updateStatement = "UPDATE A3_ISSUE SET TITLE=?, DESCRIPTION=?,CREATOR=?,RESOLVER=?,VERIFIER=?, UserVersionID=? WHERE ID=?";
 		
 		this.InsertAndUpdate(1, "update", updateStatement, issue);
 	
@@ -162,12 +162,8 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		          stmt.setInt(5, issue.getVerifier());          
 		          //only do when type is equal 1
 		          if(type==1){
-		        	//  stmt.setInt(6, issue.getId());
-		        	  stmt.setInt(6, issue.getId());
-		        	  stmt.setInt(7, issue.getVersionID());
-//		        	  stmt.setInt(7, issue.getResolver());
-//		        	  stmt.setInt(8, issue.getVerifier());	
-//		        	  stmt.setInt(9, issue.getId());
+		        	  stmt.setInt(6, issue.getVersionID()+1);
+		        	  stmt.setInt(7, issue.getId());
 		          }
 		          /* execute update or insert statement */
 		          stmt.executeUpdate(); 
@@ -182,12 +178,14 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		        	System.out.println("check your fields, some of them should not be null");  
 		        	
 			   }
-			
+			   catch (NumberFormatException e){
+		        	System.out.println("The Creator and Resolver and Verifier must be integer number");  
+			   }
 		       catch (SQLException sqle) 
 		       {  
 		           /* error handling */
 		    	   try{
-		    		   System.out.println("SQLException:"+sqle);
+		    		   System.out.println("SQLException:"+sqle.getMessage());
 			    	   System.out.println(message+" failure! ROLLBACK!!!!");  
 			           System.out.println("Transaction is being rolled back");
 			           conn.rollback();
