@@ -45,4 +45,5 @@ public interface IRepositoryProvider {
 	 * @param issue: the new issue to add
 	 */
 	public void addIssue(Issue issue);
+
 }
