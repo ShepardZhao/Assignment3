@@ -42,73 +42,104 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
             System.out.println(no_class_ex);
         }
     }
+       
     
-    /**
-     * Establishes a connection to the Oracle database.
-     * The connection parameters are read from the instance variables above
-     * (userid, passwd, and database).
-     * @returns  true   on success and then the instance variable 'conn' 
-     *                  holds an open connection to the database.
-     *           false  otherwise
-     */ 
-    public boolean connectToDatabase ()
-    {
-       try 
-       {   
-           /* connect to the database */
-           conn = DriverManager.getConnection("jdbc:oracle:thin:@"+database,userid,passwd);
-           return true;
-       }
-       catch (SQLException sql_ex) 
-       {  
-           /* error handling */
-
-           System.out.println(sql_ex);
-           return false;
-       }
-    }
-    
-    
-    /**
-     * open ONE single database connection
-     */
-    public boolean openConnection ()
-    {
-        boolean retrieve = true;
-        
-        if ( conn != null )
-            System.err.println("You are already connected to Oracle; no second connection is needed!");
-        else {
-            if ( connectToDatabase() )
-                System.out.println("You successfully connected to Oracle.");
-            else {
-                System.out.println("Oops - something went wrong.");
-                retrieve = false;
-            }
-        }
-        
-        return retrieve;
-    }
-
-    /**
-     * close the database connection again
-     */
-    public void closeConnection ()
-    {
-        if ( conn == null )
-            System.err.println("You are not connected to Oracle!");
-        else try
-        {
-             conn.close(); // close the connection again after usage! 
-             conn = null;
-        }
-        catch (SQLException sql_ex) 
-        {  /* error handling */
-             System.out.println(sql_ex);
-        }
-    }
-    
-    
+	/**
+	 * Update the details for a given issue
+	 * @param issue : the issue for which to update details
+	 */
+	@Override
+	public void updateIssue(Issue issue) {
+		
+//		String updateStatement = "UPDATE A3_ISSUE i"+
+//				" SET i.TITLE=?, i.DESCRIPTION=?,i.CREATOR=?,i.RESOLVER=?,i.VERIFIER=?"+
+//				" WHERE EXISTS ("+
+//				" SELECT *"+
+//				" FROM A3_USER u"+
+//				" WHERE (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER) AND (u.ID=? OR u.ID=? OR u.ID=?)"+
+//				" AND (i.ID=?))";
+		
+		String updateStatement = "UPDATE A3_ISSUE SET TITLE=?, DESCRIPTION=?,CREATOR=?,RESOLVER=?,VERIFIER=? WHERE ID=?";
+		
+		this.InsertAndUpdate(1, "update", updateStatement, issue);
+	
+	}
+		
+	/**
+	 * Find the issues associated in some way with a user
+	 * Issues which have the id parameter below in any one or more of the
+	 * creator, resolver, or verifier fields should be included in the result
+	 * @param id
+	 * @return
+	 */
+	@Override
+	public Vector<Issue> findUserIssues(int id) {
+		//the 'id' from is display current login user's id
+		return this.queryExtend(id, "{call getAllUserIssues(?,?)}", 0);
+	}
+	
+	/**
+	 * Add the details for a new issue to the database
+	 * @param issue: the new issue to add
+	 */
+	@Override
+	public void addIssue(Issue issue) {
+		String insertStatement = "INSERT into A3_ISSUE i (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER)"+
+	        		" values (?,?,?,?,?)";
+		this.InsertAndUpdate(0, "insert", insertStatement, issue);	
+	}
+	
+	/**
+	 * Given an expression searchString like myFirst words|my second words
+	 * this method should return any issues associated with a user based on userId that either:
+	 * contain 1 or more of the phrases separated by the '|' character in the issue title OR
+	 * contain 1 or more of the phrases separated by the '|' character in the issue description OR
+	 * @param searchString: the searchString to use for finding issues in the database based on the issue titles and
+	 * descriptions. searchString may either be a single phrase, or a phrase separated by the '|' character. The searchString
+	 * is used as described above to find matching issues in the database.
+	 * @param userId: used to first find issues associated with userId on either one or more of the creator/resolver/verifier
+	 * fields. Once a user's issues are identified, the search would then take place on the user's associated issues.
+	 * @return
+	 */
+	@Override
+	public Vector<Issue> findIssueBasedOnExpressionSearchedOnTitleAndDescription(
+			String searchString, int userId) {
+		Vector<Issue> newIssue = new Vector<Issue>();
+		//A blank search 
+		if(searchString.isEmpty()){
+			newIssue = this.queryExtend(userId, "{call getAllUserIssues(?,?)}", 0);
+		}else{	
+			identify(searchString);
+			if(titleOrDescription.size()>0)
+				searchTitle1=titleOrDescription.get(0);
+			if(titleOrDescription.size()>1)
+				searchTitle2=titleOrDescription.get(1);
+			          /* prepare a dynamic query statement */
+			if(names.size() > 0){
+				searchName=names.get(0);
+				if(titleOrDescription.size()==0){
+					newIssue = this.queryExtend(userId, "{call SEARCHTYPE1(?,?,?,?,?,?)}", 1);
+				}
+				else if(titleOrDescription.size()==1){
+					newIssue = this.queryExtend(userId, "{call SEARCHTYPE1(?,?,?,?,?,?)}", 2);
+				}else{
+					newIssue = this.queryExtend(userId, "{call SEARCHTYPE1(?,?,?,?,?,?)}", 3);
+				}			  
+			}else{
+				if(titleOrDescription.size()==1){
+					newIssue = this.queryExtend(userId, "{call SEARCHTYPE1(?,?,?,?,?,?)}", 4);
+					
+					
+				}else if(titleOrDescription.size()>1){
+					newIssue = this.queryExtend(userId, "{call SEARCHTYPE1(?,?,?,?,?,?)}", 5);
+				}
+			}		  
+			
+		}			
+		
+		return newIssue;
+	}
+	
     /**
      * InsertAndUpdate extended function ((CU) of CRUD)
      * This function will include the insert or update statement
@@ -118,6 +149,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
     	if(this.openConnection()){
 			  try
 		       {
+				  System.out.println("Process to "+message+"...");
 				  conn.setAutoCommit(false);
 		          /* prepare a dynamic query statement */
 		          PreparedStatement stmt = conn.prepareStatement(statement);
@@ -137,8 +169,9 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		          /* execute update or insert statement */
 		          stmt.executeUpdate(); 
 		          
-		          System.out.println("Insert/Update success!");
-		          
+		          System.out.println(message+" success!");
+		          conn.commit();
+		          System.out.println("commit done!");
 		          /* clean up! (NOTE this really belongs in a finally{} block) */
 		          stmt.close();
 		       }
@@ -162,35 +195,6 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 			  this.closeConnection();
 			}
     }
-    
-    /**
-     * end
-     */
-    
-    
-    
-    
-	/**
-	 * Update the details for a given issue
-	 * @param issue : the issue for which to update details
-	 */
-	@Override
-	public void updateIssue(Issue issue) {
-		
-//		String updateStatement = "UPDATE A3_ISSUE i"+
-//				" SET i.TITLE=?, i.DESCRIPTION=?,i.CREATOR=?,i.RESOLVER=?,i.VERIFIER=?"+
-//				" WHERE EXISTS ("+
-//				" SELECT *"+
-//				" FROM A3_USER u"+
-//				" WHERE (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER) AND (u.ID=? OR u.ID=? OR u.ID=?)"+
-//				" AND (i.ID=?))";
-		
-		String updateStatement = "UPDATE A3_ISSUE SET TITLE=?, DESCRIPTION=?,CREATOR=?,RESOLVER=?,VERIFIER=? WHERE ID=?";
-		
-		this.InsertAndUpdate(1, "update", updateStatement, issue);
-	
-	}
-	
 	
 	/**
 	 * Query extended function ((R) of CRUD) - by store procedure
@@ -204,6 +208,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		if(openConnection()){
 			  try
 		       {
+				  System.out.println("Issues Searching...");
 				  if(condition == 0){
 			          //prepare a dynamic query statement
 					  callableStatement = conn.prepareCall(storeProdureStatement);
@@ -257,103 +262,19 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		           /* error handling */
 		           System.out.println("SQLException : " + sqle);
 		       }
+			  System.out.println("Searching Done!");
 			  closeConnection();
-			}
-		
-		return issueVec;
-		
-	}
-	
-	
-	/**
-	 * end
-	 */
-	
-	
-
-	/**
-	 * Find the issues associated in some way with a user
-	 * Issues which have the id parameter below in any one or more of the
-	 * creator, resolver, or verifier fields should be included in the result
-	 * @param id
-	 * @return
-	 */
-	@Override
-	public Vector<Issue> findUserIssues(int id) {
-		//the 'id' from is display current login user's id
-		return this.queryExtend(id, "{call getAllUserIssues(?,?)}", 0);
+			}	
+		return issueVec;	
 	}
 	
 	/**
-	 * Add the details for a new issue to the database
-	 * @param issue: the new issue to add
+	 * Give a string, this method should identify which part are NAME Keywords
+	 * and which part is TITLE/DESCRIPTION Keywords.
+	 * @param searchStr
 	 */
-	@Override
-	public void addIssue(Issue issue) {
-		String insertStatement = "INSERT into A3_ISSUE i (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER)"+
-	        		" values (?,?,?,?,?)";
-		this.InsertAndUpdate(0, "insert", insertStatement, issue);	
-	}
-	
-
-
-
-	/**
-	 * Given an expression searchString like myFirst words|my second words
-	 * this method should return any issues associated with a user based on userId that either:
-	 * contain 1 or more of the phrases separated by the '|' character in the issue title OR
-	 * contain 1 or more of the phrases separated by the '|' character in the issue description OR
-	 * @param searchString: the searchString to use for finding issues in the database based on the issue titles and
-	 * descriptions. searchString may either be a single phrase, or a phrase separated by the '|' character. The searchString
-	 * is used as described above to find matching issues in the database.
-	 * @param userId: used to first find issues associated with userId on either one or more of the creator/resolver/verifier
-	 * fields. Once a user's issues are identified, the search would then take place on the user's associated issues.
-	 * @return
-	 */
-	@Override
-	public Vector<Issue> findIssueBasedOnExpressionSearchedOnTitleAndDescription(
-			String searchString, int userId) {
-		Vector<Issue> newIssue = new Vector<Issue>();
-		//A blank search 
-		if(searchString.isEmpty()){
-			newIssue = this.queryExtend(userId, "{call getAllUserIssues(?,?)}", 0);
-		}else{	
-			identify(searchString);
-			if(titleOrDescription.size()>0)
-				searchTitle1=titleOrDescription.get(0);
-			if(titleOrDescription.size()>1)
-				searchTitle2=titleOrDescription.get(1);
-			          /* prepare a dynamic query statement */
-			if(names.size() > 0){
-				searchName=names.get(0);
-				if(titleOrDescription.size()==0){
-					newIssue = this.queryExtend(userId, "{call SEARCHTYPE1(?,?,?,?,?,?)}", 1);
-				}
-				else if(titleOrDescription.size()==1){
-					newIssue = this.queryExtend(userId, "{call SEARCHTYPE1(?,?,?,?,?,?)}", 2);
-				}else{
-					newIssue = this.queryExtend(userId, "{call SEARCHTYPE1(?,?,?,?,?,?)}", 3);
-				}			  
-			}else{
-				if(titleOrDescription.size()==1){
-					newIssue = this.queryExtend(userId, "{call SEARCHTYPE1(?,?,?,?,?,?)}", 4);
-					
-					
-				}else if(titleOrDescription.size()>1){
-					newIssue = this.queryExtend(userId, "{call SEARCHTYPE1(?,?,?,?,?,?)}", 5);
-				}
-			}		  
-			
-		}			
-		
-		return newIssue;
-	}
-	
-
-
 	public void identify(String searchStr){
 		ArrayList<String> list = new ArrayList<String>();
-
 		boolean hasAt = false;
 		if(searchStr.contains("@")) hasAt = true;
 		
@@ -386,13 +307,73 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 				}
 			}
 		}
-		for(String s:names){
-			System.out.print("Name: ");
-			System.out.println(s);
-		}
-		for(String s:titleOrDescription){
-			System.out.print("TitleOrDescription: ");
-			System.out.println(s);
-		}
 	}
+	
+    /**
+     * Establishes a connection to the Oracle database.
+     * The connection parameters are read from the instance variables above
+     * (userid, passwd, and database).
+     * @returns  true   on success and then the instance variable 'conn' 
+     *                  holds an open connection to the database.
+     *           false  otherwise
+     */ 
+    public boolean connectToDatabase ()
+    {
+       try 
+       {   
+           /* connect to the database */
+           conn = DriverManager.getConnection("jdbc:oracle:thin:@"+database,userid,passwd);
+           return true;
+       }
+       catch (SQLException sql_ex) 
+       {  
+           /* error handling */
+
+           System.out.println(sql_ex);
+           return false;
+       }
+    }
+    
+    
+    /**
+     * open ONE single database connection
+     */
+    public boolean openConnection ()
+    {
+        boolean retrieve = true;
+        
+        if ( conn != null )
+            System.err.println("You are already connected to Oracle; no second connection is needed!");
+        else {
+			  System.out.println("Connecting to Oracle...");
+            if ( connectToDatabase() )
+                System.out.println("You successfully connected to Oracle.");
+            else {
+                System.out.println("Oops - something went wrong.");
+                retrieve = false;
+            }
+        }
+        
+        return retrieve;
+    }
+
+    /**
+     * close the database connection again
+     */
+    public void closeConnection ()
+    {
+        if ( conn == null )
+            System.err.println("You are not connected to Oracle!");
+        else try
+        {
+        	 System.out.println("Connection Closing...");
+             conn.close(); // close the connection again after usage! 
+             System.out.println("Connection closed successfully");
+             conn = null;
+        }
+        catch (SQLException sql_ex) 
+        {  /* error handling */
+             System.out.println(sql_ex);
+        }
+    }
 }

@@ -1,6 +1,7 @@
 DROP TABLE A3_ISSUE;
 DROP TABLE A3_USER;
 
+
 CREATE TABLE A3_USER
 (FIRSTNAME VARCHAR2(100) not null, 
 LASTNAME VARCHAR2(100) not null, 
@@ -26,10 +27,15 @@ Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER) values ('Inco
 
 Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER) values ('asdasdasd’ BODMAS order','Addition occurring before multiplication',1,1,1);
 
-
 Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER) values ('Incorrect’ BODMAS order','Addition occurring before multiplication',2,2,2);
 
 commit;
+
+
+GRANT ALL ON A3_ISSUE TO xzha4611;
+GRANT ALL ON A3_USER TO xzha4611;
+GRANT EXECUTE ON getAllUserIssues TO xzha4611;
+GRANT EXECUTE ON SEARCHTYPE1 TO xzha4611;
 
 
 
