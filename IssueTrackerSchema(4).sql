@@ -1,5 +1,8 @@
 DROP TABLE A3_ISSUE;
 DROP TABLE A3_USER;
+DROP SEQUENCE UserVersionID_seq;
+DROP PROCEDURE getAllUserIssues;
+DROP PROCEDURE SEARCHTYPE1;
 
 
 CREATE TABLE A3_USER
@@ -13,7 +16,7 @@ CREATE TABLE A3_ISSUE
 DESCRIPTION VARCHAR2(1000), 
 PROJECTID NUMBER, 
 TITLE VARCHAR2(100),  
-UserVersionID int, -- this column for optimistic offline lock --
+UserVersionID int NOT NULL, -- this column for optimistic offline lock --
 CREATOR NUMBER not null REFERENCES A3_USER, 
 RESOLVER NUMBER REFERENCES A3_USER, 
 VERIFIER NUMBER REFERENCES A3_USER);
@@ -27,6 +30,8 @@ begin
  --set the initial transaction control number --
 	:new.UserVersionID := dbms_utility.get_time;
 end;
+/
+commit;
 -- end --
 
 
@@ -37,12 +42,14 @@ begin
  -- update the transaction control number --	
 	if( :new.UserVersionID != :old.UserVersionID+1 )  
 	then
-	raise_application_error( -20000, ‘Update Failure, another user is in progress’ ); 
+	raise_application_error( -20000, 'Update Failure, another user is in progress'); 
 	end if;
 	
  -- update the transcation controller number --
  	:new.UserVersionID := dbms_utility.get_time;
 end; 	
+/
+commit;
 	
 
 -- end --
@@ -55,16 +62,24 @@ Insert into A3_USER (FIRSTNAME,LASTNAME) values ('Dean','Smith');
 Insert into A3_USER (FIRSTNAME,LASTNAME) values ('Jess','Smith');
 commit;
 
+CREATE SEQUENCE UserVersionID_seq MINVALUE 100 MAXVALUE 200 START WITH 101 INCREMENT BY 1  NOCACHE;
 
-Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER) values ('Division by zero','Division by 0 doesn''t yield error or infinity as would be expected. Instead it results in -1.',1,1,1);
 
-Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER) values ('Factorial with addition anomaly','Performing a factorial and then addition produces an off by 1 error',1,1,1);
 
-Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER) values ('Incorrect’ BODMAS order','Addition occurring before multiplication',1,1,1);
+Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER,UserVersionID) values 
+('Division by zero','Division by 0 doesn''t yield error or infinity as would be expected. Instead it results in -1.',1,1,1,dbms_utility.get_time+UserVersionID_seq.NEXTVAL);
 
-Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER) values ('asdasdasd’ BODMAS order','Addition occurring before multiplication',1,1,1);
+Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER,UserVersionID) values 
+('Factorial with addition anomaly','Performing a factorial and then addition produces an off by 1 error',1,1,1,dbms_utility.get_time+UserVersionID_seq.NEXTVAL);
 
-Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER) values ('Incorrect’ BODMAS order','Addition occurring before multiplication',2,2,2);
+Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER,UserVersionID) values 
+('Incorrect’ BODMAS order','Addition occurring before multiplication',1,1,1,dbms_utility.get_time+UserVersionID_seq.NEXTVAL);
+
+Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER,UserVersionID) values 
+('asdasdasd’ BODMAS order','Addition occurring before multiplication',1,1,1,dbms_utility.get_time+UserVersionID_seq.NEXTVAL);
+
+Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER,UserVersionID) values 
+('Incorrect’ BODMAS order','Addition occurring before multiplication',2,2,2,dbms_utility.get_time+UserVersionID_seq.NEXTVAL);
 
 commit;
 
@@ -72,14 +87,6 @@ commit;
 
 
 
-
--- Grant privilege -- 
-
-GRANT ALL ON A3_ISSUE TO xzha4611;
-GRANT ALL ON A3_USER TO xzha4611;
-GRANT EXECUTE ON getAllUserIssues TO xzha4611;
-GRANT EXECUTE ON SEARCHTYPE1 TO xzha4611;
--- end --
 
 
 --  query store procedure - getAllUserIssues --
@@ -96,6 +103,7 @@ BEGIN
 END;
 
 -- end --
+/
 
 
 -- search store procedure --
@@ -148,16 +156,15 @@ BEGIN
 END SEARCHTYPE1;
 
 -- end --
+/
 
 
 
 
-
-
-
-
-
-
-
-
+-- Grant privilege -- 
+GRANT ALL ON A3_ISSUE TO xzha4611;
+GRANT ALL ON A3_USER TO xzha4611;
+GRANT EXECUTE ON getAllUserIssues TO xzha4611;
+GRANT EXECUTE ON SEARCHTYPE1 TO xzha4611;
+-- end --
 
