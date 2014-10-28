@@ -3,6 +3,9 @@ DROP TABLE A3_USER;
 DROP SEQUENCE UserVersionID_seq;
 DROP PROCEDURE getAllUserIssues;
 DROP PROCEDURE SEARCHTYPE1;
+DROP TRIGGER A3_ISSUE_Trigger_initial;
+DROP TRIGGER A3_ISSUE_Trigger_update;
+
 
 
 CREATE TABLE A3_USER
@@ -22,17 +25,26 @@ RESOLVER NUMBER REFERENCES A3_USER,
 VERIFIER NUMBER REFERENCES A3_USER);
 
 
+Insert into A3_USER (FIRSTNAME,LASTNAME) values ('Dean','Smith');
+Insert into A3_USER (FIRSTNAME,LASTNAME) values ('Jess','Smith');
+commit;
+
+
+CREATE SEQUENCE UserVersionID_seq MINVALUE 100 MAXVALUE 200 START WITH 101 INCREMENT BY 1  NOCACHE;
 
 
 -- create inital trigger to generate the version id --
 create or replace trigger A3_ISSUE_Trigger_initial before insert on A3_ISSUE for each row 
 begin
  --set the initial transaction control number --
-	:new.UserVersionID := dbms_utility.get_time;
+	:new.UserVersionID := dbms_utility.get_time+UserVersionID_seq.NEXTVAL;
+
 end;
 /
 commit;
 -- end --
+
+
 
 
 
@@ -56,32 +68,25 @@ commit;
 
 
 
+Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER) values 
+('Division by zero','Division by 0 doesn''t yield error or infinity as would be expected. Instead it results in -1.',1,1,1);
 
+Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER) values 
+('Factorial with addition anomaly','Performing a factorial and then addition produces an off by 1 error',1,1,1);
 
-Insert into A3_USER (FIRSTNAME,LASTNAME) values ('Dean','Smith');
-Insert into A3_USER (FIRSTNAME,LASTNAME) values ('Jess','Smith');
+Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER) values 
+('Incorrect’ BODMAS order','Addition occurring before multiplication',1,1,1);
+
+Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER) values 
+('asdasdasd’ BODMAS order','Addition occurring before multiplication',1,1,1);
+
+Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER) values 
+('Incorrect’ BODMAS order','Addition occurring before multiplication',2,2,2);
 commit;
 
-CREATE SEQUENCE UserVersionID_seq MINVALUE 100 MAXVALUE 200 START WITH 101 INCREMENT BY 1  NOCACHE;
 
 
 
-Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER,UserVersionID) values 
-('Division by zero','Division by 0 doesn''t yield error or infinity as would be expected. Instead it results in -1.',1,1,1,dbms_utility.get_time+UserVersionID_seq.NEXTVAL);
-
-Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER,UserVersionID) values 
-('Factorial with addition anomaly','Performing a factorial and then addition produces an off by 1 error',1,1,1,dbms_utility.get_time+UserVersionID_seq.NEXTVAL);
-
-Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER,UserVersionID) values 
-('Incorrect’ BODMAS order','Addition occurring before multiplication',1,1,1,dbms_utility.get_time+UserVersionID_seq.NEXTVAL);
-
-Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER,UserVersionID) values 
-('asdasdasd’ BODMAS order','Addition occurring before multiplication',1,1,1,dbms_utility.get_time+UserVersionID_seq.NEXTVAL);
-
-Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER,UserVersionID) values 
-('Incorrect’ BODMAS order','Addition occurring before multiplication',2,2,2,dbms_utility.get_time+UserVersionID_seq.NEXTVAL);
-
-commit;
 
 
 
