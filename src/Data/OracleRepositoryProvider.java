@@ -19,7 +19,7 @@ import Presentation.IRepositoryProvider;
  * @author matthewsladescu
  */
 public class OracleRepositoryProvider implements IRepositoryProvider {
-	   // connection parameters - ENTER YOUR LOGIN AND PASSWORD HERE
+	// connection parameters - ENTER YOUR LOGIN AND PASSWORD HERE
     private final String userid   = "xzha4611";
     private final String passwd   = "xzha4611";
     private final String database = "oracle12.it.usyd.edu.au:1521:COMP5138";
@@ -59,10 +59,8 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 //				" WHERE (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER) AND (u.ID=? OR u.ID=? OR u.ID=?)"+
 //				" AND (i.ID=?))";
 		
-		String updateStatement = "UPDATE A3_ISSUE SET TITLE=?, DESCRIPTION=?,CREATOR=?,RESOLVER=?,VERIFIER=?, UserVersionID=? WHERE ID=?";
-		
+		String updateStatement = "UPDATE A3_ISSUE SET TITLE=?, DESCRIPTION=?,CREATOR=?,RESOLVER=?,VERIFIER=?, UserVersionID=? WHERE ID=?";		
 		this.InsertAndUpdate(1, "update", updateStatement, issue);
-	
 	}
 		
 	/**
@@ -133,11 +131,8 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 				}else if(titleOrDescription.size()>1){
 					newIssue = this.queryExtend(userId, "{call SEARCHTYPE1(?,?,?,?,?,?)}", 5);
 				}
-			}		  
-			
+			}		  	
 		}			
-		
-		
 		return newIssue;
 	}
 	
@@ -155,11 +150,19 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 				  conn.setAutoCommit(false);
 		          /* prepare a dynamic query statement */
 		          PreparedStatement stmt = conn.prepareStatement(statement);
-		          stmt.setString(1, issue.getTitle());
-		          stmt.setString(2, issue.getDescription());
+		          if(issue.getTitle()==null)
+		        	  stmt.setString(1, null);
+		          else stmt.setString(1, issue.getTitle());
+		          if(issue.getDescription()==null)
+		        	  stmt.setString(2, null);
+		          else stmt.setString(2, issue.getDescription());
 		          stmt.setInt(3, issue.getCreator());
-		          stmt.setInt(4, issue.getResolver());
-		          stmt.setInt(5, issue.getVerifier());          
+		          if(issue.getResolver()==null)
+		        	  stmt.setNull(4,  java.sql.Types.INTEGER);
+		          else stmt.setNull(4,  issue.getResolver());
+		          if(issue.getVerifier()==null)
+		        	  stmt.setNull(5,  java.sql.Types.INTEGER);
+		          else stmt.setNull(5,  issue.getVerifier());
 		          //only do when type is equal 1
 		          if(type==1){
 		        	  stmt.setInt(6, issue.getVersionID());
@@ -235,9 +238,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 					
 					  //casting and get result set	
 					  rs = (ResultSet) callableStatement.getObject(6);
-				  }
-
-						
+				  }						
 		          int nr = 0;
 		          while ( rs.next() )
 		          {
@@ -248,7 +249,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		             tempIssue.setDescription(rs.getString("DESCRIPTION"));
 		             tempIssue.setCreator(rs.getInt("CREATOR"));
 		             tempIssue.setId(rs.getInt("ID"));
-		             tempIssue.setVersionID(rs.getInt("USERVERSIONID"));
+		             tempIssue.setVersionID(rs.getInt("UserVersionID"));
 			         tempIssue.setResolver(rs.getInt("RESOLVER"));
 			         tempIssue.setVerifier(rs.getInt("VERIFIER"));		             		          
 		             issueVec.add(tempIssue);
@@ -259,14 +260,15 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		                 
 		          /* clean up! (NOTE this really belongs in a finally{} block) */
 		          callableStatement.close();
+				  System.out.println("Searching Done!");
+				  closeConnection();
 		       }
 		       catch (SQLException sqle) 
 		       {  
 		           /* error handling */
 		           System.out.println("SQLException : " + sqle);
 		       }
-			  System.out.println("Searching Done!");
-			  closeConnection();
+	
 			}	
 		
 		return issueVec;	
@@ -344,8 +346,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
      */
     public boolean openConnection ()
     {
-        boolean retrieve = true;
-        
+        boolean retrieve = true;       
         if ( conn != null )
             System.err.println("You are already connected to Oracle; no second connection is needed!");
         else {
@@ -357,7 +358,6 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
                 retrieve = false;
             }
         }
-        
         return retrieve;
     }
 
