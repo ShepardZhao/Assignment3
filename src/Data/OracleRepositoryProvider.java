@@ -162,7 +162,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		          stmt.setInt(5, issue.getVerifier());          
 		          //only do when type is equal 1
 		          if(type==1){
-		        	  stmt.setInt(6, issue.getVersionID()+1);
+		        	  stmt.setInt(6, issue.getVersionID());
 		        	  stmt.setInt(7, issue.getId());
 		          }
 		          /* execute update or insert statement */

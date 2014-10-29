@@ -24,6 +24,40 @@ RESOLVER NUMBER REFERENCES A3_USER,
 VERIFIER NUMBER REFERENCES A3_USER);
 
 
+
+
+/* This section is prepare an Optimistic Offline Lock*/
+
+-- create inital trigger to generate the version id --
+create or replace trigger A3_ISSUE_Trigger_initial before insert on A3_ISSUE for each row 
+begin
+ --set the initial transaction control number --
+	:new.UserVersionID := dbms_utility.get_time+1;
+
+end;
+/
+commit;
+-- end --
+
+
+
+-- create the upadte version id in the trigger -- 
+create or replace trigger A3_ISSUE_Trigger_update before update on A3_ISSUE for each row
+begin
+	if( :new.UserVersionID != :old.UserVersionID)  
+	then
+	raise_application_error( -20000, 'Update Failure, another user is in progress'); 
+	end if;
+ -- update the transcation controller number --
+ 	:new.UserVersionID := dbms_utility.get_time;
+end; 	
+/
+commit;
+-- end --
+
+
+/*Optimistic Offline Lock*/
+
 Insert into A3_USER (FIRSTNAME,LASTNAME) values ('Dean','Smith');
 Insert into A3_USER (FIRSTNAME,LASTNAME) values ('Jess','Smith');
 commit;
@@ -45,37 +79,7 @@ Insert into A3_ISSUE (TITLE,DESCRIPTION,CREATOR,RESOLVER,VERIFIER) values
 ('Incorrect’ BODMAS order','Addition occurring before multiplication',2,2,2);
 commit;
 
-/* This section is prepare an Optimistic Offline Lock*/
 
--- create inital trigger to generate the version id --
-create or replace trigger A3_ISSUE_Trigger_initial before insert on A3_ISSUE for each row 
-begin
- --set the initial transaction control number --
-	:new.UserVersionID := dbms_utility.get_time+1;
-
-end;
-/
-commit;
--- end --
-
-
-
--- create the upadte version id in the trigger -- 
-create or replace trigger A3_ISSUE_Trigger_update before update on A3_ISSUE for each row
-begin
-	if( :new.UserVersionID != :old.UserVersionID+1)  
-	then
-	raise_application_error( -20000, 'Update Failure, another user is in progress'); 
-	end if;
- -- update the transcation controller number --
- 	:new.UserVersionID := dbms_utility.get_time;
-end; 	
-/
-commit;
--- end --
-
-
-/*Optimistic Offline Lock*/
 
 
 --  query store procedure - getAllUserIssues --
