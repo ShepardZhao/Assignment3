@@ -201,7 +201,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		           /* error handling */
 		    	   try{
 		    		   
-					   newErrorDiag.showErrorDialog("Another user is doing the update for this record, would you like to refresh the record? ");
+					   newErrorDiag.showErrorDialog("This version is not a latest one,please press the refresh/rest button to get latest record.");
 					   
 		    		   System.out.println("SQLException:"+sqle.getMessage());
 			    	   System.out.println(message+" failure! ROLLBACK!!!!");  
