@@ -200,6 +200,9 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		       {  
 		           /* error handling */
 		    	   try{
+		    		   
+					   newErrorDiag.showErrorDialog("Another user is doing the update for this record, would you like to refresh the record? ");
+					   
 		    		   System.out.println("SQLException:"+sqle.getMessage());
 			    	   System.out.println(message+" failure! ROLLBACK!!!!");  
 			           System.out.println("Transaction is being rolled back");
