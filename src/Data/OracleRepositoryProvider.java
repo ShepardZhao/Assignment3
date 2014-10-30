@@ -167,14 +167,14 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		          }
 		          /* execute update or insert statement */
 		          stmt.executeUpdate(); 
-		          
+				   newErrorDiag.showErrorDialog(message+" success!");
 		          System.out.println(message+" success!");
 		          conn.commit();
 		          System.out.println("commit done!");
 		          stmt.close();
 		       }
 			   catch(NullPointerException e){
-				   newErrorDiag.showErrorDialog("Creator must be not null");
+				   newErrorDiag.showErrorDialog("Creator must be not null, rollback!");
 		        	System.out.println("Creator must be not null");  
 		        	try {
 						conn.rollback();
@@ -186,6 +186,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		        	
 			   }
 			   catch (NumberFormatException e){
+				   newErrorDiag.showErrorDialog("The Creator and Resolver and Verifier must be integer number, rollback!");
 		        	System.out.println("The Creator and Resolver and Verifier must be integer number"); 
 		        	try {
 						conn.rollback();
@@ -199,10 +200,10 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		       catch (SQLException sqle) 
 		       {  
 		           /* error handling */
+				   newErrorDiag.showErrorDialog(sqle.getMessage());
 		    	   try{
 		    		   
 					   newErrorDiag.showErrorDialog("Another user is doing the update for this record, would you like to refresh the record? ");
-					   
 		    		   System.out.println("SQLException:"+sqle.getMessage());
 			    	   System.out.println(message+" failure! ROLLBACK!!!!");  
 			           System.out.println("Transaction is being rolled back");
@@ -282,6 +283,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		       catch (SQLException sqle) 
 		       {  
 		           /* error handling */
+				   newErrorDiag.showErrorDialog(sqle.getMessage());
 		           System.out.println("SQLException : " + sqle);
 		       }
 			  finally{

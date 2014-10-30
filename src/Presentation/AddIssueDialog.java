@@ -47,8 +47,9 @@ public class AddIssueDialog extends JDialog{
 	
 	/** show the error dialog **/
 	public void showErrorDialog(String getErrorMessage){
-	        JOptionPane.showMessageDialog(null, "Error:"+getErrorMessage);	
+	        JOptionPane.showMessageDialog(null, getErrorMessage);	
 	}
-	
+
+
 	
 }
