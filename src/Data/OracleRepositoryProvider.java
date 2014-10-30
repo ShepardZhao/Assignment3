@@ -168,6 +168,10 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		          /* execute update or insert statement */
 		          stmt.executeUpdate(); 
 				   newErrorDiag.showErrorDialog(message+" success!");
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 		          System.out.println(message+" success!");
 		          conn.commit();
 		          System.out.println("commit done!");
