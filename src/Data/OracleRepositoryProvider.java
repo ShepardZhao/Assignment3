@@ -159,10 +159,10 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		          stmt.setInt(3, issue.getCreator());
 		          if(issue.getResolver()==null)
 		        	  stmt.setNull(4,  java.sql.Types.INTEGER);
-		          else stmt.setNull(4,  issue.getResolver());
+		          else stmt.setInt(4,  issue.getResolver());
 		          if(issue.getVerifier()==null)
 		        	  stmt.setNull(5,  java.sql.Types.INTEGER);
-		          else stmt.setNull(5,  issue.getVerifier());
+		          else stmt.setInt(5,  issue.getVerifier());
 		          //only do when type is equal 1
 		          if(type==1){
 		        	  stmt.setInt(6, issue.getVersionID());
