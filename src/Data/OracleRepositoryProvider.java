@@ -169,7 +169,6 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		          System.out.println(message+" success!");
 		          conn.commit();
 		          System.out.println("commit done!");
-		          /* clean up! (NOTE this really belongs in a finally{} block) */
 		          stmt.close();
 		       }
 			   catch(NullPointerException e){
@@ -206,7 +205,11 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		    		   System.out.println("SQLException:"+excep);
 		    	   }
 		       }
-			  this.closeConnection();
+			  finally{
+		          /* clean up! (NOTE this really belongs in a finally{} block) */
+				  this.closeConnection();
+
+			  }
 			}
     }
 	
@@ -265,22 +268,24 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		             issueVec.add(tempIssue);
 		          }
 		              
-		          if ( nr == 0 )
+		          if ( nr == 0 ){
 		             System.out.println("No entries found.");
-		                 
-		          /* clean up! (NOTE this really belongs in a finally{} block) */
+		          }		          
 		          callableStatement.close();
-				  System.out.println("Searching Done!");
-				  closeConnection();
 		       }
 		       catch (SQLException sqle) 
 		       {  
 		           /* error handling */
 		           System.out.println("SQLException : " + sqle);
 		       }
+			  finally{
+		          /* clean up! (NOTE this really belongs in a finally{} block) */
+					System.out.println("Searching Done!");
+					closeConnection();
+					// TODO Auto-generated catch block
+			  }
 	
-			}	
-		
+			}		
 		return issueVec;	
 	}
 	
