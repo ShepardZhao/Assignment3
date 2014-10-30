@@ -49,16 +49,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 	 * @param issue : the issue for which to update details
 	 */
 	@Override
-	public void updateIssue(Issue issue) {
-		
-//		String updateStatement = "UPDATE A3_ISSUE i"+
-//				" SET i.TITLE=?, i.DESCRIPTION=?,i.CREATOR=?,i.RESOLVER=?,i.VERIFIER=?"+
-//				" WHERE EXISTS ("+
-//				" SELECT *"+
-//				" FROM A3_USER u"+
-//				" WHERE (u.ID=i.CREATOR OR u.ID=i.RESOLVER OR u.ID=i.VERIFIER) AND (u.ID=? OR u.ID=? OR u.ID=?)"+
-//				" AND (i.ID=?))";
-		
+	public void updateIssue(Issue issue) {	
 		String updateStatement = "UPDATE A3_ISSUE SET TITLE=?, DESCRIPTION=?,CREATOR=?,RESOLVER=?,VERIFIER=?, UserVersionID=? WHERE ID=?";		
 		this.InsertAndUpdate(1, "update", updateStatement, issue);
 	}
@@ -150,6 +141,10 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 				  conn.setAutoCommit(false);
 		          /* prepare a dynamic query statement */
 		          PreparedStatement stmt = conn.prepareStatement(statement);
+		          /*
+		           * According to the specification, every columns except creator are allowed
+		           * be null value.
+		           */
 		          if(issue.getTitle()==null)
 		        	  stmt.setString(1, null);
 		          else stmt.setString(1, issue.getTitle());
@@ -178,11 +173,26 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		          stmt.close();
 		       }
 			   catch(NullPointerException e){
-		        	System.out.println("check your fields, some of them should not be null");  
+		        	System.out.println("Creator must be not null");  
+		        	try {
+						conn.rollback();
+						System.out.println("Rollback !!!");
+					} catch (SQLException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 		        	
 			   }
 			   catch (NumberFormatException e){
-		        	System.out.println("The Creator and Resolver and Verifier must be integer number");  
+		        	System.out.println("The Creator and Resolver and Verifier must be integer number"); 
+		        	try {
+						conn.rollback();
+						System.out.println("Rollback !!!");
+					} catch (SQLException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+		        	
 			   }
 		       catch (SQLException sqle) 
 		       {  
@@ -250,8 +260,8 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		             tempIssue.setCreator(rs.getInt("CREATOR"));
 		             tempIssue.setId(rs.getInt("ID"));
 		             tempIssue.setVersionID(rs.getInt("UserVersionID"));
-			         tempIssue.setResolver(rs.getInt("RESOLVER"));
-			         tempIssue.setVerifier(rs.getInt("VERIFIER"));		             		          
+			         tempIssue.setResolver(rs.getInt("RESOLVER")==0? null:rs.getInt("RESOLVER"));
+			         tempIssue.setVerifier(rs.getInt("VERIFIER")==0? null:rs.getInt("VERIFIER"));		             		          
 		             issueVec.add(tempIssue);
 		          }
 		              
