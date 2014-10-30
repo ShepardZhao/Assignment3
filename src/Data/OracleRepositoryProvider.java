@@ -168,10 +168,6 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		          /* execute update or insert statement */
 		          stmt.executeUpdate(); 
 				   newErrorDiag.showErrorDialog(message+" success!");
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
 		          System.out.println(message+" success!");
 		          conn.commit();
 		          System.out.println("commit done!");
@@ -204,15 +200,9 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		       catch (SQLException sqle) 
 		       {  
 		           /* error handling */
-				   newErrorDiag.showErrorDialog(sqle.getMessage());
+				   newErrorDiag.showErrorDialog("This is not a latest version, please manually press the Refresh/Rest button to get latest one");
 		    	   try{
 		    		   
-<<<<<<< HEAD
-					   newErrorDiag.showErrorDialog("Another user is doing the update for this record, would you like to refresh the record? ");
-=======
-					   newErrorDiag.showErrorDialog("This version is not a latest one,please press the refresh/rest button to get latest record.");
-					   
->>>>>>> FETCH_HEAD
 		    		   System.out.println("SQLException:"+sqle.getMessage());
 			    	   System.out.println(message+" failure! ROLLBACK!!!!");  
 			           System.out.println("Transaction is being rolled back");
