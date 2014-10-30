@@ -3,6 +3,7 @@ package Presentation;
 import java.awt.BorderLayout;
 
 import javax.swing.JDialog;
+import javax.swing.JOptionPane;
 
 import Business.Issue;
 
@@ -43,4 +44,11 @@ public class AddIssueDialog extends JDialog{
 		Issue issue = new Issue();
 		return issue;
 	}
+	
+	/** show the error dialog **/
+	public void showErrorDialog(String getErrorMessage){
+	        JOptionPane.showMessageDialog(null, "Error:"+getErrorMessage);	
+	}
+	
+	
 }

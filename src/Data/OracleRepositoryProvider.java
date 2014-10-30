@@ -9,7 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Vector;
-
+import Presentation.AddIssueDialog;
 import Business.Issue;
 import oracle.jdbc.OracleTypes;
 import Presentation.IRepositoryProvider;
@@ -30,9 +30,11 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 	private String searchName="";
 	private String searchTitle1="";
 	private String searchTitle2="";
+	private AddIssueDialog newErrorDiag;
     public OracleRepositoryProvider(){
         try 
         {   
+        	 newErrorDiag = new AddIssueDialog();
             /* load Oracle's JDBC driver */
             Class.forName ("oracle.jdbc.driver.OracleDriver");
         }
@@ -173,6 +175,7 @@ public class OracleRepositoryProvider implements IRepositoryProvider {
 		          stmt.close();
 		       }
 			   catch(NullPointerException e){
+				   newErrorDiag.showErrorDialog("Creator must be not null");
 		        	System.out.println("Creator must be not null");  
 		        	try {
 						conn.rollback();

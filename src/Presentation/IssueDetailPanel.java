@@ -9,6 +9,7 @@ import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -135,6 +136,9 @@ public class IssueDetailPanel extends JPanel implements IIssueSelectionNotifiabl
 		
 		return field;
 	}
+	
+	
+	
 
 	/**
 	 * Implementation of IIssueSelectionNotifiable::issueSelected used to switch issue
@@ -153,4 +157,8 @@ public class IssueDetailPanel extends JPanel implements IIssueSelectionNotifiabl
 		initIssueDetails(null);
 	}
 
+	
+	
+	
+	
 }
